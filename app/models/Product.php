@@ -56,19 +56,42 @@ class Product {
         }
     }
 
-    public static function createProduct($name, $description, $price, $category, $image) {
+    public static function createProduct($name, $description, $price, $category, $image, $sku = null, $stock = 0, $status = 'active', $featured = 0) {
         global $pdo;
         try {
-            $stmt = $pdo->prepare("INSERT INTO products (name, description, price, category, image) VALUES (:name, :description, :price, :category, :image)");
-            $stmt->execute([
+            $sql = "INSERT INTO products (name, description, price, category, image";
+            $params = [
                 ':name' => $name,
                 ':description' => $description,
                 ':price' => $price,
                 ':category' => $category,
                 ':image' => $image
-            ]);
+            ];
+            
+            // Add optional fields if they exist
+            if ($sku !== null) {
+                $sql .= ", sku";
+                $params[':sku'] = $sku;
+            }
+            
+            $sql .= ", stock, status, featured) VALUES (:name, :description, :price, :category, :image";
+            
+            if ($sku !== null) {
+                $sql .= ", :sku";
+            }
+            
+            $sql .= ", :stock, :status, :featured)";
+            $params[':stock'] = $stock;
+            $params[':status'] = $status;
+            $params[':featured'] = $featured;
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            
+            return $pdo->lastInsertId();
         } catch (PDOException $e) {
             error_log("Chyba při vkládání produktu: " . $e->getMessage());
+            return false;
         }
     }    
 }

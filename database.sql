@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 -- Přidání testovacího administrátora
 INSERT INTO users (first_name, last_name, email, password, role)
 VALUES ('Admin', 'User', 'admin@example.com', '$2y$10$abcdefghijklmnopqrstuvwx', 'admin');
-
+    
 -- Přidání testovacího uživatele
 INSERT INTO users (first_name, last_name, email, password, role)
 VALUES ('Test', 'User', 'user@example.com', '$2y$10$abcdefghijklmnopqrstuvwx', 'user');
