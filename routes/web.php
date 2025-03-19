@@ -136,6 +136,19 @@ switch ($requestUri) {
         $controller->deleteUser();
         break;
 
+
+    // uprava profilu
+    case '/mprojekt/public/user/edit':
+        $controller = new UserController();
+        $controller->edit();
+        break;
+    
+    case '/mprojekt/public/user/update':
+        $controller = new UserController();
+        $controller->update();
+        break;
+        
+
     // Ostatní routy...
 
     default:

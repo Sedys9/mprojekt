@@ -1,38 +1,58 @@
 <?php
-
 require_once __DIR__ . '/../models/Product.php';
 
 class CheckoutController
 {
     public function index()
     {
-        // Zde můžeme předvyplnit adresu, pokud ji má uživatel v profilu atd.
-        // Prozatím zobrazíme prázdný formulář.
         require __DIR__ . '/../views/checkout/index.php';
     }
 
     public function process()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // 1) Získání dat z formuláře
-            $shippingAddress = trim($_POST['shipping_address']);
-            $paymentMethod = trim($_POST['payment_method']);
-
-            // 2) Získání obsahu košíku ze session
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
 
+            $shippingAddress = trim($_POST['shipping_address']);
+            $paymentMethod = trim($_POST['payment_method']);
             $cart = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
 
             if (empty($cart)) {
-                // Košík je prázdný – nelze pokračovat
                 $_SESSION['message'] = 'Košík je prázdný, nelze vytvořit objednávku.';
                 header('Location: /mprojekt/public/cart');
                 exit();
             }
 
-            // 3) Spočítání celkové ceny
+            // Kontrola, zda je uživatel přihlášen
+            $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+            $firstName = null;
+            $lastName = null;
+            $email = null;
+            $phone = null;
+
+            if (!$userId) {
+                // Nepřihlášený uživatel musí zadat své údaje
+                $firstName = trim($_POST['first_name']);
+                $lastName = trim($_POST['last_name']);
+                $email = trim($_POST['email']);
+                $phone = trim($_POST['phone']);
+
+                if (empty($firstName) || empty($lastName) || empty($email) || empty($phone)) {
+                    $_SESSION['message'] = 'Vyplňte všechny údaje pro objednávku.';
+                    header('Location: /mprojekt/public/checkout');
+                    exit();
+                }
+
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $_SESSION['message'] = 'Neplatná e-mailová adresa.';
+                    header('Location: /mprojekt/public/checkout');
+                    exit();
+                }
+            }
+
+            // Výpočet celkové ceny
             $totalPrice = 0;
             $cartItems = [];
             foreach ($cart as $product_id => $quantity) {
@@ -40,7 +60,6 @@ class CheckoutController
                 if ($product) {
                     $itemTotal = $product['price'] * $quantity;
                     $totalPrice += $itemTotal;
-                    // Uložíme si pro pozdější použití
                     $cartItems[] = [
                         'product_id' => $product_id,
                         'quantity'   => $quantity,
@@ -49,28 +68,27 @@ class CheckoutController
                 }
             }
 
-            // 4) Vytvoření objednávky v tabulce `orders`
             global $pdo;
 
-            // user_id můžeme načíst ze session, pokud je uživatel přihlášen
-            $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
-
             try {
-                // Začneme transakci pro jistotu, aby se buď uložilo vše, nebo nic
                 $pdo->beginTransaction();
 
-                $stmt = $pdo->prepare("INSERT INTO orders (user_id, total_price, shipping_address, payment_method, created_at) 
-                                       VALUES (:user_id, :total_price, :shipping_address, :payment_method, NOW())");
-                $stmt->execute([
-                    ':user_id'         => $userId,
-                    ':total_price'     => $totalPrice, // Změněno z :total na :total_price
-                    ':shipping_address'=> $shippingAddress,
-                    ':payment_method'  => $paymentMethod
-                ]);
+                $stmt = $pdo->prepare("INSERT INTO orders (user_id, first_name, last_name, email, phone, total_price, shipping_address, payment_method, created_at) 
+                       VALUES (:user_id, :first_name, :last_name, :email, :phone, :total_price, :shipping_address, :payment_method, NOW())");
+
+                    $stmt->execute([
+                        ':user_id'         => $userId ? $userId : null,  // Pokud není přihlášen, nastaví se NULL
+                        ':first_name'      => $firstName,
+                        ':last_name'       => $lastName,
+                        ':email'           => $email,
+                        ':phone'           => $phone,
+                        ':total_price'     => $totalPrice,
+                        ':shipping_address'=> $shippingAddress,
+                        ':payment_method'  => $paymentMethod
+                    ]);
 
                 $orderId = $pdo->lastInsertId();
 
-                // 5) Vložení položek objednávky do `order_items`
                 $stmtItems = $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price)
                                             VALUES (:order_id, :product_id, :quantity, :price)");
 
@@ -83,25 +101,20 @@ class CheckoutController
                     ]);
                 }
 
-                // Dokončení transakce
                 $pdo->commit();
 
-                // 6) Vyprázdnění košíku
                 unset($_SESSION['cart']);
 
-                // 7) Přesměrování na stránku s potvrzením objednávky
                 header("Location: /mprojekt/public/checkout/success?order_id=" . $orderId);
                 exit();
 
             } catch (PDOException $e) {
-                // V případě chyby zrušíme transakci
                 $pdo->rollBack();
                 $_SESSION['message'] = "Chyba při vytváření objednávky: " . $e->getMessage();
                 header('Location: /mprojekt/public/cart');
                 exit();
             }
         } else {
-            // Pokud není POST, vrať se na formulář
             header('Location: /mprojekt/public/checkout');
             exit();
         }
@@ -109,7 +122,6 @@ class CheckoutController
 
     public function success()
     {
-        // Tady můžeš zobrazit „Děkujeme za objednávku“, případně číslo objednávky
         require __DIR__ . '/../views/checkout/success.php';
     }
 }

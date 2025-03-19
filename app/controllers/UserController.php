@@ -59,6 +59,121 @@ class UserController {
         }
     }
 
+
+    public function update() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header("Location: /mprojekt/public/user/profile");
+        exit();
+    }
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if (!isset($_SESSION['user_id'])) {
+        $_SESSION['message'] = 'Nejste přihlášeni.';
+        header("Location: /mprojekt/public/user/profile");
+        exit();
+    }
+
+    global $pdo;
+    $userId = $_SESSION['user_id'];
+    $firstName = trim($_POST['first_name']);
+    $lastName = trim($_POST['last_name']);
+    $phone = trim($_POST['phone']);
+    $street = trim($_POST['street']);
+    $city = trim($_POST['city']);
+    $zip = trim($_POST['zip']);
+    $password = $_POST['password'];
+    $passwordConfirm = $_POST['password_confirm'];
+
+    if (empty($firstName) || empty($lastName)) {
+        $_SESSION['message'] = "Jméno a příjmení musí být vyplněno.";
+        header("Location: /mprojekt/public/user/edit");
+        exit();
+    }
+
+    // Příprava pro SQL dotaz
+    $query = "UPDATE users SET first_name = :first_name, last_name = :last_name, phone = :phone, street = :street, city = :city, zip = :zip";
+    $params = [
+        ':id' => $userId,
+        ':first_name' => $firstName,
+        ':last_name' => $lastName,
+        ':phone' => $phone,
+        ':street' => $street,
+        ':city' => $city,
+        ':zip' => $zip
+    ];
+
+    // Kontrola změny hesla
+    if (!empty($password) || !empty($passwordConfirm)) {
+        if ($password !== $passwordConfirm) {
+            $_SESSION['message'] = "Hesla se neshodují.";
+            header("Location: /mprojekt/public/user/edit");
+            exit();
+        }
+
+        if (strlen($password) < 6) {
+            $_SESSION['message'] = "Heslo musí mít alespoň 6 znaků.";
+            header("Location: /mprojekt/public/user/edit");
+            exit();
+        }
+
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $query .= ", password = :password";
+        $params[':password'] = $hashedPassword;
+    }
+
+    $query .= " WHERE id = :id";
+
+    try {
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+
+        $_SESSION['message'] = "Profil byl úspěšně aktualizován.";
+    } catch (PDOException $e) {
+        $_SESSION['message'] = "Chyba při aktualizaci: " . $e->getMessage();
+    }
+
+    header("Location: /mprojekt/public/user/profile");
+    exit();
+}
+
+    
+
+    public function edit() {
+        global $pdo;
+    
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    
+        if (!isset($_SESSION['user_id'])) {
+            $_SESSION['message'] = 'Nejste přihlášeni.';
+            header("Location: /mprojekt/public/user/profile");
+            exit();
+        }
+    
+        $userId = $_SESSION['user_id'];
+    
+        // Načtení informací o uživateli
+        $stmt = $pdo->prepare("SELECT first_name, last_name, email FROM users WHERE id = :id");
+        $stmt->execute([':id' => $userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+        if (!$user) {
+            $_SESSION['message'] = "Uživatel nenalezen.";
+            header("Location: /mprojekt/public/user/profile");
+            exit();
+        }
+    
+        // Načtení šablony edit.php
+        require __DIR__ . '/../views/user/edit.php';
+    }
+    
+
+    
+
     public function orders() {
         global $pdo;
         
