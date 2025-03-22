@@ -120,7 +120,34 @@ switch ($requestUri) {
         $controller->delete();
         break;
         
-            
+    // Add these admin user management routes
+    case '/mprojekt/public/admin/user/create':
+        $controller = new AdminController();
+        $controller->createUser();
+        break;
+
+    case '/mprojekt/public/admin/user/update':
+        $controller = new AdminController();
+        $controller->updateUser();
+        break;
+
+    case '/mprojekt/public/admin/user/delete':
+        $controller = new AdminController();
+        $controller->deleteUser();
+        break;
+
+
+    // uprava profilu
+    case '/mprojekt/public/user/edit':
+        $controller = new UserController();
+        $controller->edit();
+        break;
+    
+    case '/mprojekt/public/user/update':
+        $controller = new UserController();
+        $controller->update();
+        break;
+        
 
     // Ostatní routy...
 
