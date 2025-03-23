@@ -4,6 +4,7 @@ require_once __DIR__ . '/../app/controllers/ProductController.php';
 require_once __DIR__ . '/../app/controllers/CartController.php';
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/AdminController.php';
+require_once __DIR__ . '/../app/controllers/AuthController.php';
 // Další kontrolery...
 
 // Get the request URI without query parameters
@@ -32,11 +33,12 @@ switch ($requestUri) {
         break;
 
 
-        case '/mprojekt/public/search':
-            $controller = new ProductController();
-            $controller->search();
-            break;
 
+
+    case '/mprojekt/public/search':
+        $controller = new ProductController();
+        $controller->search();
+        break;
         
         
     // Cart routes
@@ -147,6 +149,52 @@ switch ($requestUri) {
         $controller = new UserController();
         $controller->update();
         break;
+
+
+    //registrace s overenim
+    case '/mprojekt/public/auth/register':
+        $controller = new AuthController();
+        $controller->register();
+        break;
+    
+    case '/mprojekt/public/auth/enterCode':
+        $controller = new AuthController();
+        $controller->enterCode();
+        break;
+    
+    case '/mprojekt/public/auth/login':
+        $controller = new AuthController();
+        $controller->login();
+        break;
+    
+    case '/mprojekt/public/auth/logout':
+        $controller = new AuthController();
+        $controller->logout();
+        break;
+    
+
+
+    // reset hesla
+    case '/mprojekt/public/auth/resetRequest':
+        $controller = new AuthController();
+        $controller->resetRequestForm();
+        break;
+    
+    case '/mprojekt/public/auth/processResetRequest':
+        $controller = new AuthController();
+        $controller->processResetRequest();
+        break;
+    
+    case '/mprojekt/public/auth/resetPassword':
+        $controller = new AuthController();
+        $controller->resetPasswordForm();
+        break;
+    
+    case '/mprojekt/public/auth/processResetPassword':
+        $controller = new AuthController();
+        $controller->processResetPassword();
+        break;
+    
         
 
     // Ostatní routy...

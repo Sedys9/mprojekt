@@ -68,6 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <button type="submit">Přihlásit se</button>
             <p>Nemáte účet? <a href="/mprojekt/app/views/auth/register">Zaregistrujte se</a>.</p>
+
+            <!-- Odkaz na obnovu hesla -->
+            <p>Zapomněli jste heslo? 
+                <a href="/mprojekt/public/auth/resetRequest">Obnovit heslo</a>.
+            </p>
         </form>
     </main>
 </body>
